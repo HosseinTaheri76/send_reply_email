@@ -1,4 +1,4 @@
-from django.core.mail import send_mail
+from django.core.mail import send_mail, mail_admins
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
@@ -10,6 +10,16 @@ def send_email(subject, recipient_list, template_name, context):
         subject=subject,
         recipient_list=recipient_list,
         from_email='test@test.com',
+        message=plain_text,
+        html_message=html_message
+    )
+
+
+def email_admins(subject, template_name, context):
+    html_message = render_to_string(template_name, context)
+    plain_text = strip_tags(html_message)
+    mail_admins(
+        subject=subject,
         message=plain_text,
         html_message=html_message
     )

@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 from model_utils import FieldTracker
-from utils.email import send_email
+from utils.email import send_email, email_admins
 
 
 class Contact(models.Model):
@@ -33,16 +33,31 @@ class Contact(models.Model):
             context
         )
 
+    def _notify_admins(self):
+        context = {
+            'created': timezone.now(),
+            'title': self.title,
+            'fullname': self.fullname
+        }
+        email_admins(
+            f'new message from - {self.fullname}',
+            'email/notify_admins_new_contact.html',
+            context
+        )
+
     def _is_answered(self):
         return all(
-            (not self._is_created(), self.answer_tracker.has_changed('answer'), self.answer)
+            (self.answer_tracker.has_changed('answer'), self.answer)
         )
 
     def save(self, **kwargs):
-        if self._is_answered():
-            self._email_answer()
-            self.is_answered = True
-            self.datetime_answered = timezone.now()
+        if self._is_created():
+            self._notify_admins()
+        else:
+            if self._is_answered():
+                self._email_answer()
+                self.is_answered = True
+                self.datetime_answered = timezone.now()
         return super().save(**kwargs)
 
     def __str__(self):
